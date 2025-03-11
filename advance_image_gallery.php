@@ -26,19 +26,59 @@ function register_huge_advanced_image_gallery_widgets($widgets_manager)
 
 add_action('elementor/widgets/register', 'register_huge_advanced_image_gallery_widgets');
 
+function register_huge_advanced_image_gallery_assets() {
+    // Register huge_imagesloaded.js
+    wp_register_script(
+        'huge_imagesloaded',
+        'https://cdnjs.cloudflare.com/ajax/libs/jquery.imagesloaded/5.0.0/imagesloaded.pkgd.min.js',
+        ['jquery'], 
+        '5.0.0',
+        true
+    );
 
-function register_huge_advanced_image_gallery_assets($widgets_manager)
-{
+    // Register Masonry (from CDN)
+    wp_register_script(
+        'huge_masonry',
+        'https://unpkg.com/masonry-layout@4.2.2/dist/masonry.pkgd.min.js', 
+        ['jquery', 'huge_imagesloaded'], 
+        '4.2.2',
+        true
+    );
 
-    wp_register_style('huge_advanced_image_gallery_css', plugin_dir_url(__FILE__) . 'assets/css/style.css');
-    wp_enqueue_style('huge_advanced_image_gallery_css');
-    wp_register_script('huge_advanced_image_gallery_js', plugin_dir_url(__FILE__) . 'assets/js/script.js');
-    wp_enqueue_script('huge_advanced_image_gallery_js');
-    
+    wp_register_script(
+        'huge_advanced_image_gallery_js',
+        plugin_dir_url(__FILE__) . 'assets/js/script.js',
+        ['jquery', 'huge_masonry', 'huge_imagesloaded'], 
+        '1.0.0',
+        true
+    );
 
+    wp_register_style(
+        'huge_advanced_image_gallery_css',
+        plugin_dir_url(__FILE__) . 'assets/css/style.css',
+        [],
+        '1.0.0'
+    );
 }
 
-add_action('elementor/widgets/register', 'register_huge_advanced_image_gallery_assets');
+// Enqueue scripts and styles for frontend
+add_action('wp_enqueue_scripts', 'register_huge_advanced_image_gallery_assets');
+
+// Enqueue scripts and styles for Elementor editor
+function enqueue_masonry_for_elementor_editor() {
+    // Enqueue only in the Elementor editor
+    if (defined('ELEMENTOR_VERSION') && is_admin()) {
+        wp_enqueue_script('huge_imagesloaded');
+        wp_enqueue_script('huge_masonry');
+        wp_enqueue_script('huge_advanced_image_gallery_js');
+        wp_enqueue_style('huge_advanced_image_gallery_css');
+
+        // Debugging: Log script enqueuing
+        error_log('Masonry scripts enqueued in Elementor editor');
+    }
+}
+
+add_action('admin_enqueue_scripts', 'enqueue_masonry_for_elementor_editor');
 
 
 
@@ -47,3 +87,7 @@ add_action('elementor/widgets/register', 'register_huge_advanced_image_gallery_a
 
 
 
+
+
+
+ 

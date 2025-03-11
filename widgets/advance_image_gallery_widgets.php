@@ -7,7 +7,7 @@ if (!defined('ABSPATH')) {
 class Elementor_Advance_Image_Gallery_widgets extends \Elementor\Widget_Base {
 
     public function get_name(): string {
-        return 'huge_advanced_image_gallery';
+        return 'huge-advanced-image-gallery';
     }
 
     public function get_title(): string {
@@ -21,21 +21,15 @@ class Elementor_Advance_Image_Gallery_widgets extends \Elementor\Widget_Base {
     public function get_categories(): array {
         return [ 'basic' ];
     }
-
-//    public function get_keywords(): array {
-//        return [ 'hello', 'world' ];
-//    }
-
-//    public function get_script_depends() {
-//        return [ 'masonry' ];
-//    }
-
-public function get_script_depends() {
-    return ['masonry']; // Load Masonry script
-}
-
-
-
+    
+    // Add Masonry as a script dependency
+    public function get_script_depends() {
+        return ['huge_imagesloaded', 'huge_masonry', 'huge_advanced_image_gallery_js'];
+    }
+    public function get_style_depends() {
+        return ['huge_advanced_image_gallery_css'];
+    }
+    
 
     protected function register_controls() {
         $this->start_controls_section(
@@ -59,21 +53,25 @@ public function get_script_depends() {
             'columns',
             [
                 'label'       => __('Columns', 'huge_image_gallery'),
-                'type'        => \Elementor\Controls_Manager::SLIDER,
+                'type'        => \Elementor\Controls_Manager::SELECT,
                 'description' => __('Set the number of columns for different screen sizes.', 'huge_image_gallery'),
-                'size_units'  => [''],
-                'range'       => [
-                    '' => [
-                        'min'  => 1,
-                        'max'  => 12,
-                        'step' => 1,
-                    ],
+                'options'     => [
+                    '1' => __('1 Column', 'huge_image_gallery'),
+                    '2' => __('2 Columns', 'huge_image_gallery'),
+                    '3' => __('3 Columns', 'huge_image_gallery'),
+                    '4' => __('4 Columns', 'huge_image_gallery'),
+                    '5' => __('5 Columns', 'huge_image_gallery'),
+                    '6' => __('6 Columns', 'huge_image_gallery'),
+                    '8' => __('8 Columns', 'huge_image_gallery'),
+                    '10' => __('10 Columns', 'huge_image_gallery'),
+                    '12' => __('12 Columns', 'huge_image_gallery'),
                 ],
-                'default'     => [
-                    'size' => 3, // Default for desktop
-                ],
+                'default'     => '3',
                 'selectors'   => [
-                    '{{WRAPPER}} .advanced-image-gallery' => 'grid-template-columns: repeat({{SIZE}}, 1fr);',
+                    '{{WRAPPER}} .advanced-image-gallery' => 'grid-template-columns: repeat({{VALUE}}, 1fr);',
+                ],
+                'condition' => [
+                    'enable_masonry!' => 'yes',
                 ],
             ]
         );
@@ -109,6 +107,9 @@ public function get_script_depends() {
                 'selectors' => [
                     '{{WRAPPER}} .advanced-image-gallery' => 'gap: {{SIZE}}{{UNIT}};',
                 ],
+                'condition' => [
+                    'enable_masonry!' => 'yes',
+                ],
             ]
         );
         
@@ -138,7 +139,6 @@ public function get_script_depends() {
             ]
         );
 
-//        new
         $this->add_control(
             'enable_overlay',
             [
@@ -198,15 +198,11 @@ public function get_script_depends() {
                     'slide-right'    => __( 'Slide Right', 'huge_image_gallery' ),
                     'zoom-in'        => __( 'Zoom In', 'huge_image_gallery' ),
                     'zoom-out'       => __( 'Zoom Out', 'huge_image_gallery' ),
-                    // 'bounce'         => __( 'Bounce', 'huge_image_gallery' ),
                     'rotate'         => __( 'Rotate', 'huge_image_gallery' ),
                     'flip'           => __( 'Flip', 'huge_image_gallery' ),
                     'scale'          => __( 'Scale', 'huge_image_gallery' ),
                     'wipe'           => __( 'Wipe', 'huge_image_gallery' ),
                     'pulse'          => __( 'Pulse', 'huge_image_gallery' ),
-                    // 'shake'          => __( 'Shake', 'huge_image_gallery' ),
-                    // 'swing'          => __( 'Swing', 'huge_image_gallery' ),
-                    // 'roll-in'        => __( 'Roll In', 'huge_image_gallery' ),
                     'none'           => __( 'None', 'huge_image_gallery' ),
                 ],
                 'default'      => 'fade-in',
@@ -226,6 +222,9 @@ public function get_script_depends() {
                 'label_off' => __( 'No', 'huge_image_gallery' ),
                 'return_value' => 'yes',
                 'default' => 'no',
+                'condition' => [
+                    'enable_masonry!' => 'yes',
+                ],
             ]
         );
 
@@ -241,7 +240,8 @@ public function get_script_depends() {
                 ],
                 'default' => [ 'size' => 200, 'unit' => 'px' ],
                 'condition' => [
-                    'enable_fixed_height' => 'yes', 
+                    'enable_fixed_height' => 'yes',
+                    'enable_masonry!' => 'yes',
                 ],
             ]
         );
@@ -255,13 +255,86 @@ public function get_script_depends() {
                 'label_off' => __('No', 'huge_image_gallery'),
                 'return_value' => 'yes',
                 'default' => 'no',
+                'condition'    => [
+                    'enable_overlay' => 'yes',
+                ],
+            ]
+        );
+
+        $this->add_control(
+            'enable_masonry',
+            [
+                'label' => __( 'Enable Masonry', 'plugin-name' ),
+                'type' => \Elementor\Controls_Manager::SWITCHER,
+                'label_on' => __( 'Yes', 'plugin-name' ),
+                'label_off' => __( 'No', 'plugin-name' ),
+                'return_value' => 'yes',
+                'default' => '',
+            ]
+        );
+        
+        $this->add_control(
+            'masonry_columns',
+            [
+                'label'       => __('Masonry Columns', 'huge_image_gallery'),
+                'type'        => \Elementor\Controls_Manager::SELECT,
+                'description' => __('Set the number of columns for Masonry layout.', 'huge_image_gallery'),
+                'options'     => [
+                    '1' => __('1 Column', 'huge_image_gallery'),
+                    '2' => __('2 Columns', 'huge_image_gallery'),
+                    '3' => __('3 Columns', 'huge_image_gallery'),
+                    '4' => __('4 Columns', 'huge_image_gallery'),
+                    '5' => __('5 Columns', 'huge_image_gallery'),
+                    '6' => __('6 Columns', 'huge_image_gallery'),
+                    '8' => __('8 Columns', 'huge_image_gallery'),
+                    '10' => __('10 Columns', 'huge_image_gallery'),
+                    '12' => __('12 Columns', 'huge_image_gallery'),
+                ],
+                'default'     => '3',
+                'condition'   => [
+                    'enable_masonry' => 'yes',
+                ],
+            ]
+        );
+        
+        $this->add_control(
+            'masonry_gap',
+            [
+                'label' => __('Masonry Gap', 'huge_image_gallery'),
+                'type' => \Elementor\Controls_Manager::SLIDER,
+                'size_units' => ['px', 'em', 'rem', '%'],
+                'range' => [
+                    'px' => [
+                        'min' => 0,
+                        'max' => 50,
+                    ],
+                    'em' => [
+                        'min' => 0,
+                        'max' => 5,
+                    ],
+                    'rem' => [
+                        'min' => 0,
+                        'max' => 5,
+                    ],
+                    '%' => [
+                        'min' => 0,
+                        'max' => 100,
+                    ],
+                ],
+                'default' => [
+                    'size' => 10,
+                    'unit' => 'px',
+                ],
+                'condition' => [
+                    'enable_masonry' => 'yes',
+                ],
             ]
         );
         
 
         $this->end_controls_section();
 
-        /****************************************************************************************** style **************************************************************************************************** */
+        /***************************************************************** style ************************************************************************** */
 
         $this->start_controls_section(
             'style_section',
@@ -294,7 +367,7 @@ public function get_script_depends() {
                     'rem' => ['min' => 0, 'max' => 5, 'step' => 0.1],
                 ],
                 'selectors' => [
-                    '{{WRAPPER}} .gallery-item img' => 'border-radius: {{SIZE}}{{UNIT}};',
+                    '{{WRAPPER}} .huge-gallery-item img' => 'border-radius: {{SIZE}}{{UNIT}};',
                 ],
             ]
         );
@@ -304,7 +377,7 @@ public function get_script_depends() {
             [
                 'name' => 'image_border',
                 'label' => __( 'Image Border', 'huge_image_gallery' ),
-                'selector' => '{{WRAPPER}} .gallery-item img',
+                'selector' => '{{WRAPPER}} .huge-gallery-item img',
             ]
         );
         
@@ -313,7 +386,7 @@ public function get_script_depends() {
             [
                 'name' => 'image_box_shadow',
                 'label' => __( 'Box Shadow', 'huge_image_gallery' ),
-                'selector' => '{{WRAPPER}} .gallery-item img',
+                'selector' => '{{WRAPPER}} .huge-gallery-item img',
             ]
         );
 
@@ -491,12 +564,12 @@ public function get_script_depends() {
             [
                 'label' => __('Border Radius', 'huge_image_gallery'),
                 'type' => \Elementor\Controls_Manager::SLIDER,
-                'size_units' => ['px', '%', 'em', 'rem'], // Added em and rem
+                'size_units' => ['px', '%', 'em', 'rem'],
                 'range' => [
                     'px' => ['min' => 0, 'max' => 50],
                     '%'  => ['min' => 0, 'max' => 100],
-                    'em' => ['min' => 0, 'max' => 5],  // Define a reasonable range for em
-                    'rem' => ['min' => 0, 'max' => 5], // Define a reasonable range for rem
+                    'em' => ['min' => 0, 'max' => 5],  
+                    'rem' => ['min' => 0, 'max' => 5],
                 ],
                 'selectors' => [
                     '{{WRAPPER}} .overlay-icon' => 'border-radius: {{SIZE}}{{UNIT}};',
@@ -594,185 +667,6 @@ public function get_script_depends() {
         $this->end_controls_section();
     }
     
-
-    // protected function render(): void {
-    //     $settings = $this->get_settings_for_display();
-
-    //     if ( empty( $settings['images'] ) ) {
-    //         return;
-    //     }
-
-    //     $columns = $settings['columns'];
-    //     $gap = $settings['gap']['size'] . $settings['gap']['unit'];
-    //     $enable_lightbox = $settings['enable_lightbox'] === 'yes';
-    //     $enable_lightbox_gallery = $settings['enable_lightbox_gallery'] === 'yes';
-    //     $enable_overlay = $settings['enable_overlay'] === 'yes';
-    //     $show_icon = $settings['show_icon'] === 'yes';
-    //     $overlay_icon = $settings['overlay_icon'];
-    //     $overlay_animation = $settings['overlay_animation'];
-
-    //     echo '<div class="advanced-image-gallery" style="display: grid; grid-template-columns: repeat(' . esc_attr( $columns ) . ', 1fr); gap: ' . esc_attr( $gap ) . ';">';
-    //     foreach ( $settings['images'] as $image ) {
-    //         echo '<div class="gallery-item">';
-
-    //         if ( $enable_lightbox ) {
-    //             $lightbox_attributes = $enable_lightbox_gallery ? ' data-elementor-lightbox-slideshow="gallery"' : '';
-    //             echo '<a href="' . esc_url( $image['url'] ) . '" data-elementor-open-lightbox="yes"' . $lightbox_attributes . '>';
-    //         }
-
-    //         echo '<div class="gallery-image-wrapper">';
-
-    //         echo '<img src="' . esc_url( $image['url'] ) . '" alt="' . esc_attr( get_post_meta( $image['id'], '_wp_attachment_image_alt', true ) ) . '">';
-
-    //         if ( $enable_overlay ) {
-    //             echo '<div class="image-overlay ' . esc_attr( $overlay_animation ) . '">';
-
-    //             if ( $show_icon && ! empty( $overlay_icon['value'] ) ) {
-    //                 echo '<div class="overlay-icon">';
-    //                 \Elementor\Icons_Manager::render_icon( $overlay_icon, [ 'aria-hidden' => 'true' ] );
-    //                 echo '</div>';
-    //             }
-
-    //             echo '</div>';
-    //         }
-
-    //         echo '</div>';
-
-    //         if ( $enable_lightbox ) {
-    //             echo '</a>';
-    //         }
-
-    //         echo '</div>';
-    //     }
-
-    //     echo '</div>';
-    // }
-
-    // protected function render(): void {
-    //     $settings = $this->get_settings_for_display();
-    
-    //     if ( empty( $settings['images'] ) ) {
-    //         return;
-    //     }
-    
-    //     $columns = (int) $settings['columns']; 
-    //     $gap = esc_attr($settings['gap']['size'] . $settings['gap']['unit']);
-        
-    //     $enable_lightbox = $settings['enable_lightbox'] === 'yes';
-    //     $enable_lightbox_gallery = $settings['enable_lightbox_gallery'] === 'yes';
-    //     $enable_overlay = $settings['enable_overlay'] === 'yes';
-    //     $show_icon = $settings['show_icon'] === 'yes';
-    //     $overlay_icon = $settings['overlay_icon'];
-    //     $overlay_animation = $settings['overlay_animation'];
-    
-    //     // Check if fixed height is enabled
-    //     $enable_fixed_height = $settings['enable_fixed_height'] === 'yes';
-    //     $fixed_height = $enable_fixed_height ? esc_attr($settings['fixed_height']['size'] . $settings['fixed_height']['unit']) : 'auto';
-    
-    //     echo '<div class="advanced-image-gallery" style="display: grid; grid-template-columns: repeat(' . esc_attr($columns) . ', 1fr); gap: ' . $gap . ';">';
-    
-    //     foreach ($settings['images'] as $image) {
-    //         echo '<div class="gallery-item">';
-            
-    //         if ($enable_lightbox) {
-    //             $lightbox_attributes = $enable_lightbox_gallery ? ' data-elementor-lightbox-slideshow="gallery"' : '';
-    //             echo '<a href="' . esc_url($image['url']) . '" data-elementor-open-lightbox="yes"' . $lightbox_attributes . '>';
-    //         }
-    
-    //         echo '<div class="gallery-image-wrapper">';
-            
-    //         // Apply the fixed height inline
-    //         echo '<img src="' . esc_url($image['url']) . '" alt="' . esc_attr(get_post_meta($image['id'], '_wp_attachment_image_alt', true)) . '" style="height: ' . $fixed_height . '; object-fit: cover; width: 100%;">';
-    
-    //         if ($enable_overlay) {
-    //             echo '<div class="image-overlay ' . esc_attr($overlay_animation) . '">';
-    //             if ($show_icon && !empty($overlay_icon['value'])) {
-    //                 echo '<div class="overlay-icon">';
-    //                 \Elementor\Icons_Manager::render_icon($overlay_icon, ['aria-hidden' => 'true']);
-    //                 echo '</div>';
-    //             }
-    //             echo '</div>';
-    //         }
-    
-    //         echo '</div>';
-    
-    //         if ($enable_lightbox) {
-    //             echo '</a>';
-    //         }
-    
-    //         echo '</div>';
-    //     }
-    
-    //     echo '</div>';
-    // }
-
-    // protected function render(): void {
-    //     $settings = $this->get_settings_for_display();
-    
-    //     if ( empty( $settings['images'] ) ) {
-    //         return;
-    //     }
-    
-    //     // $columns = (int) $settings['columns']; 
-    //     $gap = esc_attr($settings['gap']['size'] . $settings['gap']['unit']);
-        
-    //     $enable_lightbox = $settings['enable_lightbox'] === 'yes';
-    //     $enable_lightbox_gallery = $settings['enable_lightbox_gallery'] === 'yes';
-    //     $enable_overlay = $settings['enable_overlay'] === 'yes';
-    //     $show_icon = $settings['show_icon'] === 'yes';
-    //     $overlay_icon = $settings['overlay_icon'];
-    //     $overlay_animation = $settings['overlay_animation'];
-    //     $show_caption = $settings['show_caption'] === 'yes';
-    
-    //     // Check if fixed height is enabled
-    //     $enable_fixed_height = $settings['enable_fixed_height'] === 'yes';
-    //     $fixed_height = $enable_fixed_height ? esc_attr($settings['fixed_height']['size'] . $settings['fixed_height']['unit']) : 'auto';
-    
-    //     // echo '<div class="advanced-image-gallery" style="display: grid; grid-template-columns: repeat(' . esc_attr($columns) . ', 1fr); gap: ' . $gap . ';">';
-    //     echo '<div class="advanced-image-gallery" style="display: grid; gap: ' . $gap . ';">';
-    
-    //     foreach ($settings['images'] as $image) {
-    //         echo '<div class="gallery-item">';
-            
-    //         if ($enable_lightbox) {
-    //             $lightbox_attributes = $enable_lightbox_gallery ? ' data-elementor-lightbox-slideshow="gallery"' : '';
-    //             echo '<a href="' . esc_url($image['url']) . '" data-elementor-open-lightbox="yes"' . $lightbox_attributes . '>';
-    //         }
-    
-    //         echo '<div class="gallery-image-wrapper">';
-            
-    //         // Apply the fixed height inline
-    //         echo '<img src="' . esc_url($image['url']) . '" alt="' . esc_attr(get_post_meta($image['id'], '_wp_attachment_image_alt', true)) . '" style="height: ' . $fixed_height . '; object-fit: cover; width: 100%;">';
-    
-    //         if ($enable_overlay) {
-    //             echo '<div class="image-overlay ' . esc_attr($overlay_animation) . '">';
-    //             if ($show_icon && !empty($overlay_icon['value'])) {
-    //                 echo '<div class="overlay-icon">';
-    //                 \Elementor\Icons_Manager::render_icon($overlay_icon, ['aria-hidden' => 'true']);
-    //                 echo '</div>';
-    //             }
-    //             if ($show_caption) {
-    //                 // Get the image caption from the attachment
-    //                 $image_caption = wp_get_attachment_caption($image['id']);
-    //                 if (!empty($image_caption)) {
-    //                     echo '<div class="image-caption">' . esc_html($image_caption) . '</div>';
-    //                 }
-    //             }
-    //             echo '</div>';
-    //         }
-    
-    //         echo '</div>';
-    
-    //         if ($enable_lightbox) {
-    //             echo '</a>';
-    //         }
-    
-    //         echo '</div>';
-    //     }
-    
-    //     echo '</div>';
-    // }
-
     protected function render(): void {
         $settings = $this->get_settings_for_display();
     
@@ -780,7 +674,7 @@ public function get_script_depends() {
             return;
         }
     
-        // $gap = esc_attr($settings['gap']['size'] . $settings['gap']['unit']);
+        $enable_masonry = $settings['enable_masonry'] === 'yes';
         $enable_lightbox = $settings['enable_lightbox'] === 'yes';
         $enable_lightbox_gallery = $settings['enable_lightbox_gallery'] === 'yes';
         $enable_overlay = $settings['enable_overlay'] === 'yes';
@@ -789,17 +683,43 @@ public function get_script_depends() {
         $overlay_animation = $settings['overlay_animation'];
         $show_caption = $settings['show_caption'] === 'yes';
         $enable_fixed_height = $settings['enable_fixed_height'] === 'yes';
-        $fixed_height = $enable_fixed_height ? esc_attr($settings['fixed_height']['size'] . $settings['fixed_height']['unit']) : 'auto';
+        $fixed_height = ($enable_fixed_height && isset($settings['fixed_height']['size'], $settings['fixed_height']['unit'])) 
+            ? esc_attr($settings['fixed_height']['size'] . $settings['fixed_height']['unit']) 
+            : 'auto';
+
+        if ($enable_masonry) {
+            $fixed_height = 'auto';
+        }
+
+    
+        // Masonry-specific settings
+        $masonry_columns = $enable_masonry ? $settings['masonry_columns'] : '3';
+        $masonry_gap = $enable_masonry ? $settings['masonry_gap']['size'] : 10; 
+        $masonry_gap_unit = $enable_masonry ? $settings['masonry_gap']['unit'] : 'px'; 
+    
+        // Calculate the margin (half of the gap)
+        $masonry_margin = $masonry_gap / 2;
+    
+        // Add a class for masonry layout if enabled
+        $gallery_class = $enable_masonry ? 'advanced-image-gallery huge-masonry' : 'advanced-image-gallery';
+    
+        // Inline styles for masonry layout
+        $masonry_item_style = $enable_masonry ? sprintf(
+            'style="width: calc(100%% / %d - %s); margin: %s;"',
+            $masonry_columns,
+            $masonry_gap . $masonry_gap_unit, 
+            $masonry_margin . $masonry_gap_unit 
+        ) : '';
         ?>
     
-        <div class="advanced-image-gallery">
+        <div class="<?php echo $gallery_class; ?>">
             <?php foreach ($settings['images'] as $image): 
                 $image_url = esc_url($image['url']);
                 $image_alt = esc_attr(get_post_meta($image['id'], '_wp_attachment_image_alt', true));
                 $image_caption = wp_get_attachment_caption($image['id']);
                 $lightbox_attributes = $enable_lightbox_gallery ? ' data-elementor-lightbox-slideshow="gallery"' : '';
             ?>
-                <div class="gallery-item">
+                <div class="huge-gallery-item" <?php echo $masonry_item_style; ?>>
                     <?php if ($enable_lightbox): ?>
                         <a href="<?php echo $image_url; ?>" data-elementor-open-lightbox="yes" <?php echo $lightbox_attributes; ?>>
                     <?php endif; ?>
@@ -830,6 +750,7 @@ public function get_script_depends() {
     
         <?php
     }
+    
     
     
 
